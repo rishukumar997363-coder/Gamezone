@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game Zone: Ludo and Snakes and Ladders</title>
+<style>
+:root{--bg:#efe7d6;--bg2:#fff6e0;--fg:#2a2218;--card:#fffdf7;--line:#c9bfa8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15131f;--bg2:#2a2540;--fg:#f1ecff;--card:#2f2b45;--line:#5b5580;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15131f;--bg2:#2a2540;--fg:#f1ecff;--card:#2f2b45;--line:#5b5580;color-scheme:dark}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 20%,var(--bg2),var(--bg));color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:520px;margin:0 auto;padding:10px 12px 24px;display:flex;flex-direction:column;gap:10px}
+#bar{display:flex;justify-content:space-between;align-items:center;font-size:20px}
+#bar button{border:2px solid var(--fg);background:var(--card);color:var(--fg);border-radius:10px;padding:6px 12px;font-size:14px}
+#status{font-weight:700;display:flex;align-items:center;gap:8px;justify-content:center;min-height:26px}
+#dot{width:16px;height:16px;border-radius:50%;box-shadow:0 0 8px currentColor}
+#top,#bot{display:flex;justify-content:space-between;gap:8px}
+#bot .pn:only-child{margin-left:auto}
+.pn{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:18px;background:var(--card);border:3px solid var(--c);box-shadow:0 5px 0 var(--c);transition:.3s;opacity:.75}
+.pn.on{opacity:1;transform:scale(1.07);box-shadow:0 5px 0 var(--c),0 0 24px var(--c);cursor:pointer}
+.nm{font-weight:700;font-size:14px}
+.sc{width:56px;height:56px;perspective:300px;margin:6px}
+.pn.on .sc{animation:bob .7s infinite alternate}
+@keyframes bob{to{transform:translateY(-6px)}}
+.cube{width:56px;height:56px;position:relative;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+.f{position:absolute;inset:0;background:linear-gradient(135deg,#fff,#ddd);border:1px solid #999;border-radius:9px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:7px;box-sizing:border-box;backface-visibility:hidden}
+.f i{border-radius:50%}.f i.p{background:radial-gradient(circle at 35% 35%,#555,#000);margin:1px}
+.f1{transform:translateZ(28px)}.f6{transform:rotateY(180deg) translateZ(28px)}.f3{transform:rotateY(90deg) translateZ(28px)}.f4{transform:rotateY(-90deg) translateZ(28px)}.f2{transform:rotateX(90deg) translateZ(28px)}.f5{transform:rotateX(-90deg) translateZ(28px)}
+#bw{perspective:1100px;padding:6px 0 18px}
+#bd{display:block;width:100%;border:6px solid #7a4a20;border-radius:14px;box-shadow:0 9px 0 #4b2b10,0 26px 26px #0008;transform:rotateX(20deg);background:var(--card);touch-action:manipulation}
+.pc{cursor:pointer}
+.hop{animation:hop .13s ease-out}
+@keyframes hop{50%{transform:translateY(-.35px)}}
+.ring{animation:rg .6s infinite alternate}
+@keyframes rg{from{r:.38;opacity:1}to{r:.52;opacity:.3}}
+.sp{transition:transform .22s ease-in-out}
+#menu{position:fixed;inset:0;background:radial-gradient(circle at 50% 20%,var(--bg2),var(--bg));display:flex;align-items:center;justify-content:center;padding:24px;z-index:5;overflow:auto}
+#menu>div{max-width:330px;width:100%;text-align:center}
+#menu h1{font-size:38px;margin:0 0 6px}
+button.b{font-size:17px;padding:14px;border-radius:14px;border:2px solid var(--fg);background:var(--card);color:var(--fg);width:100%;margin:6px 0;box-shadow:0 4px 0 var(--fg);font-weight:600}
+button.b:active{transform:translateY(3px);box-shadow:0 1px 0 var(--fg)}
+.cf{position:fixed;top:-20px;width:10px;height:14px;animation:fall 3s linear forwards;z-index:9}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style></head><body>
+<div id="app">
+<div id="bar"><b>🎲 Game Zone</b><span><button id="mu" onclick="toggleMute()">🔊</button> <button onclick="showMenu()">☰ Menu</button></span></div>
+<div id="status"><span id="dot"></span><span id="msg"></span></div>
+<div id="top"></div>
+<div id="bw"><svg id="bd"></svg></div>
+<div id="bot"></div>
+</div>
+<div id="menu"><div>
+<h1>🎲 Game Zone</h1>
+<p id="mt">Pick a game</p>
+<div id="m1">
+<button class="b" onclick="pick('ludo')">🎲 Ludo</button>
+<button class="b" onclick="pick('snl')">🐍 Snakes &amp; Ladders</button>
+</div>
+<div id="m2" style="display:none">
+<button class="b" onclick="go(g0,3)">👫 2 Friends</button>
+<button class="b" onclick="go(g0,4)">👨‍👩‍👦 3 Friends</button>
+<button class="b" onclick="go(g0,2)">👥 4 Friends</button>
+<button class="b" onclick="go(g0,0)">🤖 You vs 1 Computer</button>
+<button class="b" onclick="go(g0,1)">🤖 You vs 3 Computers</button>
+<button class="b" onclick="showMenu()">← Back</button>
+</div>
+</div></div>
+<script>
+const COL=['#e53935','#43a047','#fdd835','#1e88e5'],NAME=['Red','Green','Yellow','Blue'],ST=[0,13,26,39],SAFE=[0,8,13,21,26,34,39,47];
+const $=id=>document.getElementById(id),bd=$('bd');
+const P=[],a=(r,c,dr,dc,n)=>{for(let k=0;k<n;k++)P.push([r+dr*k,c+dc*k])};
+a(6,1,0,1,5);a(5,6,-1,0,6);a(0,7,0,1,2);a(1,8,1,0,5);a(6,9,0,1,6);a(7,14,1,0,2);a(8,13,0,-1,5);a(9,8,1,0,6);a(14,7,0,-1,2);a(13,6,-1,0,5);a(8,5,0,-1,6);a(7,0,-1,0,2);
+const HC=[k=>[7,1+k],k=>[1+k,7],k=>[7,13-k],k=>[13-k,7]],BO=[[0,0],[0,9],[9,9],[9,0]];
+let G,act,cpu,cur,pos,roll,phase,moves,hopI,dk=[0,0,0,0];
+const pawn=c=>`<ellipse cy=".3" rx=".3" ry=".11" fill="#000" opacity=".3"/><path d="M-.26,.28Q-.24,-.02 0,-.08Q.24,-.02 .26,.28Z" fill="${c}" stroke="#0006" stroke-width=".03"/><circle cy="-.2" r=".17" fill="${c}" stroke="#0006" stroke-width=".03"/><circle cx="-.06" cy="-.26" r=".05" fill="#fff" opacity=".75"/>`;
+// Ludo board
+let s='';
+BO.forEach(([r,c],p)=>{s+=`<rect x="${c}" y="${r}" width="6" height="6" fill="${COL[p]}"/><rect x="${c+1}" y="${r+1}" width="4" height="4" rx=".5" fill="var(--card)"/>`;
+for(let i=0;i<4;i++)s+=`<circle cx="${c+2+(i%2)*2}" cy="${r+2+(i>>1)*2}" r=".45" fill="${COL[p]}" opacity=".35"/>`});
+P.forEach(([r,c],k)=>{const sp=ST.indexOf(k);s+=`<rect x="${c}" y="${r}" width="1" height="1" fill="${sp>=0?COL[sp]:'var(--card)'}" stroke="var(--line)" stroke-width=".05"/><rect x="${c}" y="${r+.85}" width="1" height="${.15}" fill="#000" opacity=".12"/>`;
+if(SAFE.includes(k)&&sp<0)s+=`<text x="${c+.5}" y="${r+.72}" font-size=".7" text-anchor="middle" fill="#aaa">★</text>`});
+for(let p=0;p<4;p++)for(let k=0;k<5;k++){const[r,c]=HC[p](k);s+=`<rect x="${c}" y="${r}" width="1" height="1" fill="${COL[p]}" stroke="var(--line)" stroke-width=".05"/>`}
+s+=`<polygon points="6,6 6,9 7.5,7.5" fill="${COL[0]}"/><polygon points="6,6 9,6 7.5,7.5" fill="${COL[1]}"/><polygon points="9,6 9,9 7.5,7.5" fill="${COL[2]}"/><polygon points="6,9 9,9 7.5,7.5" fill="${COL[3]}"/>`;
+const LB=s;
+// Snakes & Ladders board
+const SN={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78},LD={1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100},JUMP={...SN,...LD};
+const nc=n=>{let r=(n-1)/10|0,c=(n-1)%10;if(r%2)c=9-c;return[c+.5,9-r+.5]};
+s='';
+for(let n=1;n<=100;n++){const[x,y]=nc(n);s+=`<rect x="${x-.5}" y="${y-.5}" width="1" height="1" fill="${(x+y)%2?'#ffe3a3':'#bfe6b0'}" stroke="#0002" stroke-width=".03"/><text x="${x-.42}" y="${y-.2}" font-size=".28" fill="#0009">${n}</text>`}
+for(const k in LD){const A=nc(+k),B=nc(LD[k]),dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,px=-uy*.14,py=ux*.14;
+s+=`<g stroke="#8d5a2b" stroke-linecap="round"><line x1="${A[0]+px}" y1="${A[1]+py}" x2="${B[0]+px}" y2="${B[1]+py}" stroke-width=".08"/><line x1="${A[0]-px}" y1="${A[1]-py}" x2="${B[0]-px}" y2="${B[1]-py}" stroke-width=".08"/>`;
+for(let t=.4;t<L;t+=.45)s+=`<line x1="${A[0]+ux*t+px}" y1="${A[1]+uy*t+py}" x2="${A[0]+ux*t-px}" y2="${A[1]+uy*t-py}" stroke-width=".05"/>`;s+='</g>'}
+const SC=['#e91e63','#9c27b0','#ff9800','#009688','#3f51b5'];let si=0;
+for(const k in SN){const A=nc(+k),B=nc(SN[k]),dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy),qx=-dy/L*.9,qy=dx/L*.9,c=SC[si++%5];
+s+=`<path d="M${A} C${A[0]+dx*.33+qx},${A[1]+dy*.33+qy} ${A[0]+dx*.66-qx},${A[1]+dy*.66-qy} ${B}" fill="none" stroke="${c}" stroke-width=".26" stroke-linecap="round"/><path d="M${A} C${A[0]+dx*.33+qx},${A[1]+dy*.33+qy} ${A[0]+dx*.66-qx},${A[1]+dy*.66-qy} ${B}" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".09" stroke-dasharray=".12 .2"/><circle cx="${A[0]}" cy="${A[1]}" r=".22" fill="${c}"/><circle cx="${A[0]-.08}" cy="${A[1]-.06}" r=".06" fill="#fff"/><circle cx="${A[0]+.08}" cy="${A[1]-.06}" r=".06" fill="#fff"/><circle cx="${A[0]-.08}" cy="${A[1]-.06}" r=".03"/><circle cx="${A[0]+.08}" cy="${A[1]-.06}" r=".03"/>`}
+const SB=s;
+// sound
+let AC,mute=false;
+function snd(f,d,t='sine',v=.15,w=0,f2){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();if(mute)return;const o=AC.createOscillator(),g=AC.createGain(),T=AC.currentTime+w;o.type=t;o.frequency.setValueAtTime(f,T);if(f2)o.frequency.exponentialRampToValueAtTime(f2,T+d);g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(AC.destination);o.start(T);o.stop(T+d)}catch(e){}}
+const SFX={roll(){for(let i=0;i<9;i++)snd(180+Math.random()*200,.05,'square',.06,i*.1)},step(){snd(520,.07,'triangle',.18)},cap(){snd(400,.35,'sawtooth',.15,0,60)},win(){[523,659,784,1047].forEach((f,i)=>snd(f,.3,'triangle',.2,i*.15))},ladder(){[392,494,587,784].forEach((f,i)=>snd(f,.15,'triangle',.18,i*.1))},snake(){snd(700,.7,'sawtooth',.12,0,90)},none(){snd(200,.25,'square',.1)},click(){snd(660,.06,'square',.08)}};
+const sfx=n=>SFX[n]();
+function toggleMute(){mute=!mute;$('mu').textContent=mute?'🔇':'🔊'}
+// dice
+const PIP=[[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]],ROT={1:[0,0],6:[0,180],3:[0,-90],4:[0,90],2:[-90,0],5:[90,0]};
+const faces=()=>[1,2,3,4,5,6].map(v=>`<div class="f f${v}">${[...Array(9).keys()].map(i=>`<i class="${PIP[v-1].includes(i)?'p':''}"></i>`).join('')}</div>`).join('');
+function setDice(p,v,spin){dk[p]+=spin?2:0;const[x,y]=ROT[v];$('cb'+p).style.transform=`rotateX(${x+360*dk[p]}deg) rotateY(${y+360*dk[p]}deg)`}
+function panel(p){return `<div class="pn" id="pn${p}" style="--c:${COL[p]}" onclick="pd(${p})"><div><div class="nm">${NAME[p]}${cpu.includes(p)?' 🤖':''}</div></div><div class="sc"><div class="cube" id="cb${p}">${faces()}</div></div></div>`}
+function go(g,m){G=g;act=[[0,2],[0,1,2,3],[0,1,2,3],[0,2],[0,1,2]][m];cpu=m<2?act.slice(1):[];cur=0;hopI=null;dk=[0,0,0,0];
+pos=[0,1,2,3].map(()=>g==='ludo'?[-1,-1,-1,-1]:0);
+$('top').innerHTML=[0,1].filter(p=>act.includes(p)).map(panel).join('');$('bot').innerHTML=[3,2].filter(p=>act.includes(p)).map(panel).join('');
+act.forEach(p=>setDice(p,1,0));
+bd.setAttribute('viewBox',g==='ludo'?'0 0 15 15':'0 0 10 10');
+bd.innerHTML=(g==='ludo'?LB:SB)+'<g id="pl">'+(g==='snl'?act.map(p=>`<g class="sp" id="sp${p}"><g transform="scale(1.15)">${pawn(COL[p])}</g></g>`).join(''):'')+'</g>';
+$('menu').style.display='none';sfx('click');turn(true)}
+var g0;function pick(g){g0=g;$('m1').style.display='none';$('m2').style.display='block';$('mt').textContent=(g==='ludo'?'Ludo':'Snakes & Ladders')+': how many players?'}
+function showMenu(){$('m1').style.display='block';$('m2').style.display='none';$('mt').textContent='Pick a game';$('menu').style.display='flex'}
+function status(t){const p=act[cur];$('dot').style.background=COL[p];$('dot').style.color=COL[p];$('msg').textContent=t}
+function xy(p,i){const v=pos[p][i];let r,c;
+if(v<0)return[BO[p][1]+2+(i%2)*2,BO[p][0]+2+(i>>1)*2];
+if(v<=50)[r,c]=P[(ST[p]+v)%52];else if(v<=55)[r,c]=HC[p](v-51);else return[7.5+(i%2?.3:-.3),7.5+(i>>1?.3:-.3)];
+return[c+.5,r+.5]}
+function render(){
+if(G==='snl'){act.forEach(p=>{const[x,y]=pos[p]?nc(pos[p]):[-.6,9.9];$('sp'+p).style.transform=`translate(${x+(p%2-.5)*.3}px,${y+(p>>1?.2:-.1)}px)`});return}
+let g='',seen={};
+act.forEach(p=>{for(let i=0;i<4;i++){let[x,y]=xy(p,i);const k=x+','+y,n=seen[k]=(seen[k]||0)+1,v=pos[p][i];
+if(n>1&&v>=0&&v<56){x+=(n-1)*.17;y-=(n-1)*.1}
+const m=phase==='pick'&&p===act[cur]&&moves.includes(i),h=hopI&&hopI[0]===p&&hopI[1]===i;
+g+=`<g transform="translate(${x},${y-.1})" class="pc" data-p="${p}" data-i="${i}">${m?'<circle class="ring" cy=".15" r=".4" fill="none" stroke="#000" stroke-width=".08"/>':''}<g class="${h?'hop':''}">${pawn(COL[p])}</g><circle r=".5" fill="transparent"/></g>`}});
+$('pl').innerHTML=g}
+function turn(keep){if(!keep)cur=(cur+1)%act.length;phase='roll';moves=null;hopI=null;render();const p=act[cur];
+document.querySelectorAll('.pn').forEach(e=>e.classList.remove('on'));$('pn'+p).classList.add('on');
+status(NAME[p]+(cpu.includes(p)?' (computer) rolling…':': tap your dice'));
+if(cpu.includes(p))setTimeout(doRoll,800)}
+function pd(p){if(phase==='roll'&&act[cur]===p&&!cpu.includes(p))doRoll()}
+function doRoll(){if(phase!=='roll')return;phase='rolling';const p=act[cur];roll=1+(Math.random()*6|0);sfx('roll');setDice(p,roll,1);setTimeout(G==='ludo'?lAfter:sAfter,1050)}
+// Ludo logic
+function legal(p,r){const o=[];for(let i=0;i<4;i++){const v=pos[p][i];if(v<0?r===6:v+r<=56)o.push(i)}return o}
+function lAfter(){const p=act[cur];moves=legal(p,roll);
+if(!moves.length){sfx('none');status(NAME[p]+' rolled '+roll+': no move');return setTimeout(()=>turn(false),1000)}
+if(cpu.includes(p))return setTimeout(()=>mv(ai(p)),600);
+if(moves.length===1)return setTimeout(()=>mv(moves[0]),450);
+phase='pick';status(NAME[p]+' rolled '+roll+': pick a piece');render()}
+function ai(p){let best=-1,bs=-1e9;moves.forEach(i=>{const v=pos[p][i],nv=v<0?0:v+roll;let sc=v;
+if(v<0)sc=60;if(nv===56)sc=100;
+if(nv<=50){const ab=(ST[p]+nv)%52;if(!SAFE.includes(ab)){act.forEach(q=>{if(q!==p)pos[q].forEach(w=>{if(w>=0&&w<=50&&(ST[q]+w)%52===ab)sc+=120})})}else sc+=15}
+if(nv>50&&v<=50)sc+=30;sc+=Math.random()*5;if(sc>bs){bs=sc;best=i}});return best}
+function mv(i){if(phase==='anim')return;phase='anim';const p=act[cur];moves=null;hopI=[p,i];const t=pos[p][i]<0?0:pos[p][i]+roll;
+const st=()=>{if(pos[p][i]<0)pos[p][i]=0;else pos[p][i]++;sfx('step');render();if(pos[p][i]<t)setTimeout(st,150);else land(p,i)};st()}
+function land(p,i){const v=pos[p][i];let ex=roll===6;
+if(v<=50){const ab=(ST[p]+v)%52;if(!SAFE.includes(ab))act.forEach(q=>{if(q!==p)for(let j=0;j<4;j++){const w=pos[q][j];if(w>=0&&w<=50&&(ST[q]+w)%52===ab){pos[q][j]=-1;ex=true;sfx('cap');status('💥 '+NAME[p]+' captured '+NAME[q]+'!')}}})}
+if(v===56)ex=true;hopI=null;render();
+if(pos[p].every(x=>x===56))return win(p);
+setTimeout(()=>turn(ex),500)}
+bd.addEventListener('click',e=>{const g=e.target.closest('.pc');if(!g||phase!=='pick')return;const i=+g.dataset.i;if(+g.dataset.p===act[cur]&&moves.includes(i))mv(i)});
+// Snakes & Ladders logic
+function sAfter(){const p=act[cur];if(pos[p]+roll>100){status(NAME[p]+' rolled '+roll+': need exact number');sfx('none');return setTimeout(()=>turn(false),1000)}
+phase='anim';const t=pos[p]+roll;
+const st=()=>{pos[p]++;sfx('step');render();if(pos[p]<t)return setTimeout(st,230);
+const j=JUMP[pos[p]];setTimeout(()=>{if(j){sfx(j>pos[p]?'ladder':'snake');status(j>pos[p]?'🪜 Ladder! Climbing up':'🐍 Snake bite! Sliding down');pos[p]=j;render()}
+setTimeout(()=>{if(pos[p]===100)win(p);else turn(roll===6)},j?900:150)},250)};st()}
+function win(p){phase='over';sfx('win');$('msg').textContent=NAME[p]+' wins! 🏆';$('dot').style.background=COL[p];
+for(let i=0;i<50;i++){const d=document.createElement('div');d.className='cf';d.style.left=Math.random()*100+'vw';d.style.background=COL[i%4];d.style.animationDelay=Math.random()*1.5+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),5000)}
+setTimeout(()=>{showMenu();$('mt').textContent='🏆 '+NAME[p]+' wins! Play again?'},1800)}
+</script></body></html>
